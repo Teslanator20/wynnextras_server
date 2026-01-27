@@ -24,29 +24,31 @@ public class GambitController {
     /**
      * Submit today's gambits
      * POST /gambit
-     * Header: Wynncraft-Api-Key (required)
+     * Header: Player-UUID (required) - The Minecraft player's UUID
      * Body: { "gambits": [{"name": "...", "description": "..."}] }
      */
     @PostMapping
     public ResponseEntity<?> submitGambits(
             @RequestBody GambitSubmissionDto submission,
-            @RequestHeader("Wynncraft-Api-Key") String apiKey) {
+            @RequestHeader("Player-UUID") String playerUuid) {
 
-        // Validate API key and get username
-        List<String> uuids;
-        try {
-            uuids = wynncraftService.fetchUuid(apiKey);
-        } catch (Exception e) {
-            logger.error("Failed to validate API key", e);
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Invalid Wynncraft API key");
+        // Validate UUID format
+        if (playerUuid == null || playerUuid.trim().isEmpty()) {
+            logger.warn("Missing Player-UUID header");
+            return ResponseEntity.badRequest().body("Missing Player-UUID header");
         }
 
-        if (uuids == null || uuids.isEmpty()) {
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Invalid Wynncraft API key");
+        // Normalize UUID (remove dashes if present)
+        String normalizedUuid = playerUuid.replace("-", "").toLowerCase();
+
+        // Validate UUID format (32 hex characters)
+        if (!normalizedUuid.matches("[0-9a-f]{32}")) {
+            logger.warn("Invalid UUID format: {}", playerUuid);
+            return ResponseEntity.badRequest().body("Invalid UUID format");
         }
 
-        // Get username from first UUID
-        String username = uuids.get(0);
+        // Use normalized UUID as username
+        String username = normalizedUuid;
 
         // Submit gambits
         try {
