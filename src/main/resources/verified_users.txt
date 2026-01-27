@@ -1,0 +1,9 @@
+# Verified Users - Auto-approve loot pool submissions
+# Add one username per line (case-insensitive)
+# Lines starting with # are ignored
+# The server will load these on startup and sync to database
+
+# Example:
+# PlayerName1
+# PlayerName2
+# AnotherPlayer
