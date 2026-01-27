@@ -10,5 +10,5 @@ import java.util.Optional;
 public interface RaidLootPoolSubmissionRepository extends JpaRepository<RaidLootPoolSubmission, Long> {
     List<RaidLootPoolSubmission> findByRaidTypeAndWeekIdentifier(String raidType, String weekIdentifier);
     List<RaidLootPoolSubmission> findByWeekIdentifier(String weekIdentifier);
-    Optional<RaidLootPoolSubmission> findByRaidTypeAndWeekIdentifierAndSubmittedBy(String raidType, String weekIdentifier, String submittedBy);
+    List<RaidLootPoolSubmission> findByRaidTypeAndWeekIdentifierAndSubmittedByOrderBySubmittedAtDesc(String raidType, String weekIdentifier, String submittedBy);
 }
