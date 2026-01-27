@@ -1,4 +1,4 @@
-package com.julianh06.wynnextras_server;
+package com.julianh06.wynnextras_server.entity;
 
 import jakarta.persistence.*;
 import java.time.Instant;

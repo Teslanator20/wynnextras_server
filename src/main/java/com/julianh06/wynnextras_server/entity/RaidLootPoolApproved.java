@@ -1,11 +1,11 @@
-package com.julianh06.wynnextras_server;
+package com.julianh06.wynnextras_server.entity;
 
 import jakarta.persistence.*;
 import java.time.Instant;
 
 @Entity
-@Table(name = "raid_lootpool_submission")
-public class RaidLootPoolSubmission {
+@Table(name = "raid_lootpool_approved")
+public class RaidLootPoolApproved {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
@@ -13,26 +13,30 @@ public class RaidLootPoolSubmission {
     @Column(nullable = false, length = 10)
     private String raidType; // NOTG, NOL, TCC, TNA
 
-    @Column(nullable = false)
-    private String submittedBy; // username
-
     @Column(nullable = false, columnDefinition = "TEXT")
-    private String aspectsJson; // JSON string of sorted aspects
+    private String aspectsJson; // JSON string of approved aspects
 
     @Column(nullable = false)
-    private Instant submittedAt;
+    private Instant approvedAt;
 
     @Column(nullable = false, length = 10)
     private String weekIdentifier; // e.g., "2026-W04"
 
-    public RaidLootPoolSubmission() {}
+    @Column(nullable = false)
+    private boolean locked; // locked at 10 submissions
 
-    public RaidLootPoolSubmission(String raidType, String submittedBy, String aspectsJson, String weekIdentifier) {
+    @Column(nullable = false)
+    private int submissionCount; // how many submissions matched
+
+    public RaidLootPoolApproved() {}
+
+    public RaidLootPoolApproved(String raidType, String aspectsJson, String weekIdentifier, int submissionCount, boolean locked) {
         this.raidType = raidType;
-        this.submittedBy = submittedBy;
         this.aspectsJson = aspectsJson;
         this.weekIdentifier = weekIdentifier;
-        this.submittedAt = Instant.now();
+        this.submissionCount = submissionCount;
+        this.locked = locked;
+        this.approvedAt = Instant.now();
     }
 
     // Getters and setters
@@ -42,15 +46,18 @@ public class RaidLootPoolSubmission {
     public String getRaidType() { return raidType; }
     public void setRaidType(String raidType) { this.raidType = raidType; }
 
-    public String getSubmittedBy() { return submittedBy; }
-    public void setSubmittedBy(String submittedBy) { this.submittedBy = submittedBy; }
-
     public String getAspectsJson() { return aspectsJson; }
     public void setAspectsJson(String aspectsJson) { this.aspectsJson = aspectsJson; }
 
-    public Instant getSubmittedAt() { return submittedAt; }
-    public void setSubmittedAt(Instant submittedAt) { this.submittedAt = submittedAt; }
+    public Instant getApprovedAt() { return approvedAt; }
+    public void setApprovedAt(Instant approvedAt) { this.approvedAt = approvedAt; }
 
     public String getWeekIdentifier() { return weekIdentifier; }
     public void setWeekIdentifier(String weekIdentifier) { this.weekIdentifier = weekIdentifier; }
+
+    public boolean isLocked() { return locked; }
+    public void setLocked(boolean locked) { this.locked = locked; }
+
+    public int getSubmissionCount() { return submissionCount; }
+    public void setSubmissionCount(int submissionCount) { this.submissionCount = submissionCount; }
 }

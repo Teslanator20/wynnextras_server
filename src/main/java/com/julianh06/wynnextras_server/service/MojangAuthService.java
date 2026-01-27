@@ -1,4 +1,4 @@
-package com.julianh06.wynnextras_server;
+package com.julianh06.wynnextras_server.service;
 
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;

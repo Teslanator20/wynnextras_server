@@ -1,4 +1,4 @@
-package com.julianh06.wynnextras_server;
+package com.julianh06.wynnextras_server.util;
 
 import java.time.*;
 import java.time.format.DateTimeFormatter;

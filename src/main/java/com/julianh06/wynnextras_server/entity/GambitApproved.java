@@ -1,34 +1,34 @@
-package com.julianh06.wynnextras_server;
+package com.julianh06.wynnextras_server.entity;
 
 import jakarta.persistence.*;
 import java.time.Instant;
 
 @Entity
-@Table(name = "gambit_submission")
-public class GambitSubmission {
+@Table(name = "gambit_approved")
+public class GambitApproved {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
     @Column(nullable = false, columnDefinition = "TEXT")
-    private String gambitsJson; // JSON array of 3-4 gambits (sorted)
+    private String gambitsJson; // JSON array of approved gambits
 
     @Column(nullable = false)
-    private String submittedBy; // username
-
-    @Column(nullable = false)
-    private Instant submittedAt;
+    private Instant approvedAt;
 
     @Column(nullable = false, length = 10)
     private String dayIdentifier; // e.g., "2026-01-27"
 
-    public GambitSubmission() {}
+    @Column(nullable = false)
+    private boolean locked; // locked at 2+ submissions
 
-    public GambitSubmission(String gambitsJson, String submittedBy, String dayIdentifier) {
+    public GambitApproved() {}
+
+    public GambitApproved(String gambitsJson, String dayIdentifier, boolean locked) {
         this.gambitsJson = gambitsJson;
-        this.submittedBy = submittedBy;
         this.dayIdentifier = dayIdentifier;
-        this.submittedAt = Instant.now();
+        this.locked = locked;
+        this.approvedAt = Instant.now();
     }
 
     // Getters and setters
@@ -38,12 +38,12 @@ public class GambitSubmission {
     public String getGambitsJson() { return gambitsJson; }
     public void setGambitsJson(String gambitsJson) { this.gambitsJson = gambitsJson; }
 
-    public String getSubmittedBy() { return submittedBy; }
-    public void setSubmittedBy(String submittedBy) { this.submittedBy = submittedBy; }
-
-    public Instant getSubmittedAt() { return submittedAt; }
-    public void setSubmittedAt(Instant submittedAt) { this.submittedAt = submittedAt; }
+    public Instant getApprovedAt() { return approvedAt; }
+    public void setApprovedAt(Instant approvedAt) { this.approvedAt = approvedAt; }
 
     public String getDayIdentifier() { return dayIdentifier; }
     public void setDayIdentifier(String dayIdentifier) { this.dayIdentifier = dayIdentifier; }
+
+    public boolean isLocked() { return locked; }
+    public void setLocked(boolean locked) { this.locked = locked; }
 }

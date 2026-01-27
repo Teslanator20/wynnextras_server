@@ -1,5 +1,9 @@
-package com.julianh06.wynnextras_server;
+package com.julianh06.wynnextras_server.controller;
 
+import com.julianh06.wynnextras_server.dto.PersonalAspectDto;
+import com.julianh06.wynnextras_server.entity.PersonalAspect;
+import com.julianh06.wynnextras_server.repository.PersonalAspectRepository;
+import com.julianh06.wynnextras_server.service.MojangAuthService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;

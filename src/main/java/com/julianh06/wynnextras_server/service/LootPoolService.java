@@ -1,7 +1,14 @@
-package com.julianh06.wynnextras_server;
+package com.julianh06.wynnextras_server.service;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.julianh06.wynnextras_server.dto.LootPoolSubmissionDto;
+import com.julianh06.wynnextras_server.entity.RaidLootPoolApproved;
+import com.julianh06.wynnextras_server.entity.RaidLootPoolSubmission;
+import com.julianh06.wynnextras_server.repository.RaidLootPoolApprovedRepository;
+import com.julianh06.wynnextras_server.repository.RaidLootPoolSubmissionRepository;
+import com.julianh06.wynnextras_server.repository.VerifiedUserRepository;
+import com.julianh06.wynnextras_server.util.TimeUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;

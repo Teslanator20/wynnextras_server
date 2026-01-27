@@ -1,7 +1,13 @@
-package com.julianh06.wynnextras_server;
+package com.julianh06.wynnextras_server.service;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.julianh06.wynnextras_server.dto.GambitSubmissionDto;
+import com.julianh06.wynnextras_server.entity.GambitApproved;
+import com.julianh06.wynnextras_server.entity.GambitSubmission;
+import com.julianh06.wynnextras_server.repository.GambitApprovedRepository;
+import com.julianh06.wynnextras_server.repository.GambitSubmissionRepository;
+import com.julianh06.wynnextras_server.util.TimeUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
