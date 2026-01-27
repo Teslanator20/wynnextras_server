@@ -54,16 +54,27 @@ public class LootPoolService {
 
         String aspectsJson = serializeAspects(sortedAspects);
 
-        // Check if user already submitted for this raid/week
-        Optional<RaidLootPoolSubmission> userExistingSubmission =
-            submissionRepo.findByRaidTypeAndWeekIdentifierAndSubmittedBy(raidType, weekId, username);
+        // Check if user already submitted for this raid/week (sorted by most recent first)
+        List<RaidLootPoolSubmission> userExistingSubmissions =
+            submissionRepo.findByRaidTypeAndWeekIdentifierAndSubmittedByOrderBySubmittedAtDesc(raidType, weekId, username);
 
-        if (userExistingSubmission.isPresent()) {
-            // Update existing submission
-            RaidLootPoolSubmission submission = userExistingSubmission.get();
-            submission.setAspectsJson(aspectsJson);
-            submission.setSubmittedAt(java.time.Instant.now());
-            submissionRepo.save(submission);
+        if (!userExistingSubmissions.isEmpty()) {
+            // Keep most recent, delete old duplicates (legacy cleanup)
+            RaidLootPoolSubmission mostRecent = userExistingSubmissions.get(0);
+
+            if (userExistingSubmissions.size() > 1) {
+                // Delete legacy duplicates
+                for (int i = 1; i < userExistingSubmissions.size(); i++) {
+                    submissionRepo.delete(userExistingSubmissions.get(i));
+                }
+                logger.info("Cleaned up {} duplicate submissions for {} week {} from {}",
+                    userExistingSubmissions.size() - 1, raidType, weekId, username);
+            }
+
+            // Update the most recent submission
+            mostRecent.setAspectsJson(aspectsJson);
+            mostRecent.setSubmittedAt(java.time.Instant.now());
+            submissionRepo.save(mostRecent);
             logger.info("Updated loot pool submission for {} week {} from {}", raidType, weekId, username);
         } else {
             // Save new submission
