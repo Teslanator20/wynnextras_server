@@ -19,53 +19,56 @@ public class GambitController {
     private GambitService gambitService;
 
     @Autowired
-    private WynncraftService wynncraftService;
+    private MojangAuthService mojangAuth;
 
     /**
      * Submit today's gambits
      * POST /gambit
-     * Header: Player-UUID (required) - The Minecraft player's UUID
+     * Headers:
+     *   - Username (required) - Minecraft username
+     *   - Server-ID (required) - Shared secret for Mojang verification
      * Body: { "gambits": [{"name": "...", "description": "..."}] }
      */
     @PostMapping
     public ResponseEntity<?> submitGambits(
             @RequestBody GambitSubmissionDto submission,
-            @RequestHeader("Player-UUID") String playerUuid) {
+            @RequestHeader("Username") String username,
+            @RequestHeader("Server-ID") String serverId) {
 
-        // Validate UUID format
-        if (playerUuid == null || playerUuid.trim().isEmpty()) {
-            logger.warn("Missing Player-UUID header");
-            return ResponseEntity.badRequest().body("Missing Player-UUID header");
+        // Validate headers
+        if (username == null || username.trim().isEmpty()) {
+            return ResponseEntity.badRequest().body("Missing Username header");
+        }
+        if (serverId == null || serverId.trim().isEmpty()) {
+            return ResponseEntity.badRequest().body("Missing Server-ID header");
         }
 
-        // Normalize UUID (remove dashes if present)
-        String normalizedUuid = playerUuid.replace("-", "").toLowerCase();
-
-        // Validate UUID format (32 hex characters)
-        if (!normalizedUuid.matches("[0-9a-f]{32}")) {
-            logger.warn("Invalid UUID format: {}", playerUuid);
-            return ResponseEntity.badRequest().body("Invalid UUID format");
+        // Authenticate with Mojang
+        MojangAuthService.AuthResult authResult = mojangAuth.verifyPlayer(username, serverId);
+        if (!authResult.isSuccess()) {
+            logger.warn("Authentication failed for user {}: {}", username, authResult.getError());
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                .body(createResponse("error", authResult.getError(), null));
         }
 
-        // Use normalized UUID as username
-        String username = normalizedUuid;
+        String verifiedUsername = authResult.getUsername();
 
         // Submit gambits
         try {
             GambitSubmissionDto approved = gambitService.submitGambits(
                 submission.getGambits(),
-                username
+                verifiedUsername
             );
 
             if (approved != null) {
-                logger.info("Gambits were approved");
+                logger.info("Gambits were approved (submitted by {})", verifiedUsername);
                 return ResponseEntity.ok().body(createResponse(
                     "approved",
                     "Gambits approved for today",
                     approved
                 ));
             } else {
-                logger.info("Gambits submitted but not yet approved");
+                logger.info("Gambits submitted by {} but not yet approved", verifiedUsername);
                 return ResponseEntity.ok().body(createResponse(
                     "submitted",
                     "Gambits submitted. Waiting for more confirmations.",

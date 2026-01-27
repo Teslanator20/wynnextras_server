@@ -18,19 +18,22 @@ public class LootPoolController {
     private LootPoolService lootPoolService;
 
     @Autowired
-    private WynncraftService wynncraftService;
+    private MojangAuthService mojangAuth;
 
     /**
      * Submit a loot pool for a raid
      * POST /lootpool/{raidType}
-     * Header: Player-UUID (required) - The Minecraft player's UUID
+     * Headers:
+     *   - Username (required) - Minecraft username
+     *   - Server-ID (required) - Shared secret for Mojang verification
      * Body: { "aspects": [{"name": "...", "rarity": "...", "requiredClass": "..."}] }
      */
     @PostMapping("/{raidType}")
     public ResponseEntity<?> submitLootPool(
             @PathVariable String raidType,
             @RequestBody LootPoolSubmissionDto submission,
-            @RequestHeader("Player-UUID") String playerUuid) {
+            @RequestHeader("Username") String username,
+            @RequestHeader("Server-ID") String serverId) {
 
         // Validate raid type
         if (!isValidRaidType(raidType)) {
@@ -38,41 +41,41 @@ public class LootPoolController {
             return ResponseEntity.badRequest().body("Invalid raid type. Must be NOTG, NOL, TCC, or TNA");
         }
 
-        // Validate UUID format
-        if (playerUuid == null || playerUuid.trim().isEmpty()) {
-            logger.warn("Missing Player-UUID header");
-            return ResponseEntity.badRequest().body("Missing Player-UUID header");
+        // Validate headers
+        if (username == null || username.trim().isEmpty()) {
+            return ResponseEntity.badRequest().body("Missing Username header");
+        }
+        if (serverId == null || serverId.trim().isEmpty()) {
+            return ResponseEntity.badRequest().body("Missing Server-ID header");
         }
 
-        // Normalize UUID (remove dashes if present)
-        String normalizedUuid = playerUuid.replace("-", "").toLowerCase();
-
-        // Validate UUID format (32 hex characters without dashes, or 36 with dashes)
-        if (!normalizedUuid.matches("[0-9a-f]{32}")) {
-            logger.warn("Invalid UUID format: {}", playerUuid);
-            return ResponseEntity.badRequest().body("Invalid UUID format");
+        // Authenticate with Mojang
+        MojangAuthService.AuthResult authResult = mojangAuth.verifyPlayer(username, serverId);
+        if (!authResult.isSuccess()) {
+            logger.warn("Authentication failed for user {}: {}", username, authResult.getError());
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                .body(Map.of("status", "error", "message", authResult.getError()));
         }
 
-        // Use normalized UUID as username
-        String username = normalizedUuid;
+        String verifiedUsername = authResult.getUsername();
 
         // Submit loot pool
         try {
             LootPoolSubmissionDto approved = lootPoolService.submitLootPool(
                 raidType,
                 submission.getAspects(),
-                username
+                verifiedUsername
             );
 
             if (approved != null) {
-                logger.info("Loot pool for {} was approved", raidType);
+                logger.info("Loot pool for {} was approved (submitted by {})", raidType, verifiedUsername);
                 return ResponseEntity.ok().body(Map.of(
                     "status", "approved",
                     "message", "Loot pool approved for " + raidType,
                     "lootPool", approved
                 ));
             } else {
-                logger.info("Loot pool for {} submitted but not yet approved", raidType);
+                logger.info("Loot pool for {} submitted by {} but not yet approved", raidType, verifiedUsername);
                 return ResponseEntity.ok().body(Map.of(
                     "status", "submitted",
                     "message", "Loot pool submitted. Waiting for more confirmations."

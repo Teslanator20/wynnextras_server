@@ -15,7 +15,7 @@ import java.util.stream.Collectors;
 
 /**
  * Personal aspect tracking controller
- * NO API KEY REQUIRED - trusts the authenticated Minecraft session
+ * Uses Mojang sessionserver authentication - no API keys or session IDs exposed
  */
 @RestController
 @RequestMapping("/user")
@@ -25,28 +25,42 @@ public class PersonalAspectController {
     @Autowired
     private PersonalAspectRepository personalAspectRepo;
 
+    @Autowired
+    private MojangAuthService mojangAuth;
+
     /**
      * Upload personal aspects
      * POST /user
-     * Header: Player-UUID (required) - From authenticated Minecraft session
+     * Headers:
+     *   - Username (required) - Minecraft username
+     *   - Server-ID (required) - Shared secret for Mojang verification
      * Body: { "playerName": "...", "modVersion": "...", "aspects": [...] }
      */
     @PostMapping
     @Transactional
     public ResponseEntity<?> uploadAspects(
             @RequestBody PersonalAspectDto.UploadRequest request,
-            @RequestHeader("Player-UUID") String playerUuid) {
+            @RequestHeader("Username") String username,
+            @RequestHeader("Server-ID") String serverId) {
 
-        // Validate UUID
-        if (playerUuid == null || playerUuid.trim().isEmpty()) {
-            return ResponseEntity.badRequest().body("Missing Player-UUID header");
+        // Validate headers
+        if (username == null || username.trim().isEmpty()) {
+            return ResponseEntity.badRequest().body("Missing Username header");
+        }
+        if (serverId == null || serverId.trim().isEmpty()) {
+            return ResponseEntity.badRequest().body("Missing Server-ID header");
         }
 
-        // Normalize UUID
-        String normalizedUuid = playerUuid.replace("-", "").toLowerCase();
-        if (!normalizedUuid.matches("[0-9a-f]{32}")) {
-            return ResponseEntity.badRequest().body("Invalid UUID format");
+        // Authenticate with Mojang
+        MojangAuthService.AuthResult authResult = mojangAuth.verifyPlayer(username, serverId);
+        if (!authResult.isSuccess()) {
+            logger.warn("Authentication failed for user {}: {}", username, authResult.getError());
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                .body(createResponse("error", authResult.getError()));
         }
+
+        String verifiedUuid = authResult.getUuid();
+        String verifiedUsername = authResult.getUsername();
 
         // Validate request
         if (request.getAspects() == null || request.getAspects().isEmpty()) {
@@ -56,22 +70,22 @@ public class PersonalAspectController {
         try {
             // Save or update each aspect
             for (PersonalAspectDto.AspectData aspect : request.getAspects()) {
-                var existing = personalAspectRepo.findByPlayerUuidAndAspectName(normalizedUuid, aspect.getName());
+                var existing = personalAspectRepo.findByPlayerUuidAndAspectName(verifiedUuid, aspect.getName());
 
                 if (existing.isPresent()) {
                     // Update existing
                     PersonalAspect pa = existing.get();
                     pa.setAmount(aspect.getAmount());
                     pa.setRarity(aspect.getRarity());
-                    pa.setPlayerName(request.getPlayerName());
+                    pa.setPlayerName(verifiedUsername);
                     pa.setModVersion(request.getModVersion());
                     pa.setUpdatedAt(Instant.now());
                     personalAspectRepo.save(pa);
                 } else {
                     // Create new
                     PersonalAspect pa = new PersonalAspect(
-                        normalizedUuid,
-                        request.getPlayerName(),
+                        verifiedUuid,
+                        verifiedUsername,
                         aspect.getName(),
                         aspect.getRarity(),
                         aspect.getAmount(),
@@ -81,7 +95,8 @@ public class PersonalAspectController {
                 }
             }
 
-            logger.info("Saved {} aspects for player {}", request.getAspects().size(), normalizedUuid);
+            logger.info("Saved {} aspects for verified player {} (UUID: {})",
+                request.getAspects().size(), verifiedUsername, verifiedUuid);
 
             return ResponseEntity.ok().body(createResponse("success", "Aspects uploaded successfully"));
 
