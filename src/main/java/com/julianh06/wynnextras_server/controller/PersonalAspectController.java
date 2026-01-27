@@ -23,7 +23,7 @@ import java.util.stream.Collectors;
  * Uses Mojang sessionserver authentication - no API keys or session IDs exposed
  */
 @RestController
-@RequestMapping("/user")
+@RequestMapping("/aspects")
 public class PersonalAspectController {
     private static final Logger logger = LoggerFactory.getLogger(PersonalAspectController.class);
 
