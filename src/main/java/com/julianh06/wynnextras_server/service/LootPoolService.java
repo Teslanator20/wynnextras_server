@@ -103,9 +103,10 @@ public class LootPoolService {
 
     /**
      * Check if username is in verified user list
+     * Case-insensitive check (usernames stored lowercase in DB)
      */
     public boolean isVerifiedUser(String username) {
-        return verifiedUserRepo.existsByUsername(username);
+        return verifiedUserRepo.existsByUsername(username.toLowerCase());
     }
 
     /**
